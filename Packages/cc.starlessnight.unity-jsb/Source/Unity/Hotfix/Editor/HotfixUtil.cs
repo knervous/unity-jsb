@@ -6,6 +6,8 @@ using System.Linq;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 
+using TypeDefinition = Mono.Cecil.TypeDefinition;
+
 namespace QuickJS.Unity.Experimental.Hotfix
 {
     using UnityEditor;
