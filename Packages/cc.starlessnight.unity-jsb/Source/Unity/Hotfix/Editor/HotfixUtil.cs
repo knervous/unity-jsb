@@ -7,6 +7,10 @@ using Mono.Cecil;
 using Mono.Cecil.Cil;
 
 using TypeDefinition = Mono.Cecil.TypeDefinition;
+using MethodDefinition = Mono.Cecil.MethodDefinition;
+using MethodBody = Mono.Cecil.MethodBody;
+using Instruction = Mono.Cecil.Instruction;
+using OpCode = Mono.Cecil.OpCode;
 
 namespace QuickJS.Unity.Experimental.Hotfix
 {
