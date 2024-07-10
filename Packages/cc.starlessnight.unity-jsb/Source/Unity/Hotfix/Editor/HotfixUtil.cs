@@ -6,12 +6,6 @@ using System.Linq;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 
-using TypeDefinition = Mono.Cecil.TypeDefinition;
-using MethodDefinition = Mono.Cecil.MethodDefinition;
-using MethodBody = Mono.Cecil.MethodBody;
-using Instruction = Mono.Cecil.Instruction;
-using OpCode = Mono.Cecil.OpCode;
-
 namespace QuickJS.Unity.Experimental.Hotfix
 {
     using UnityEditor;
@@ -28,7 +22,7 @@ namespace QuickJS.Unity.Experimental.Hotfix
             Run();
         }
 
-        private static bool IsHotfixTarget(TypeDefinition td)
+        private static bool IsHotfixTarget(Mono.Cecil.TypeDefinition td)
         {
             foreach (var attr in td.CustomAttributes)
             {
@@ -40,7 +34,7 @@ namespace QuickJS.Unity.Experimental.Hotfix
             return false;
         }
 
-        public static bool Collect(AssemblyDefinition a, List<TypeDefinition> delegateTypes)
+        public static bool Collect(Mono.Cecil.AssemblyDefinition a, List<Mono.Cecil.TypeDefinition> delegateTypes)
         {
             foreach (var type in a.MainModule.Types)
             {
@@ -63,13 +57,13 @@ namespace QuickJS.Unity.Experimental.Hotfix
             return true;
         }
 
-        public static bool IsParameterMatched(ParameterDefinition p1, ParameterDefinition p2)
+        public static bool IsParameterMatched(Mono.Cecil.ParameterDefinition p1, Mono.Cecil.ParameterDefinition p2)
         {
             return p1.ParameterType == p2.ParameterType && p1.IsOut == p2.IsOut;
         }
 
         // 方法定义是否与 hotfix 委托定义匹配
-        public static bool IsDelegateMatched(MethodDefinition m, TypeReference returnType, TypeDefinition d)
+        public static bool IsDelegateMatched(Mono.Cecil.MethodDefinition m, TypeReference returnType, Mono.Cecil.TypeDefinition d)
         {
             var invoke = d.Methods.First(dm => dm.Name == "Invoke");
             var argc = invoke.Parameters.Count;
@@ -118,7 +112,7 @@ namespace QuickJS.Unity.Experimental.Hotfix
         }
 
         // 从 Delegate 定义池中找一个匹配的
-        public static TypeDefinition GetDelegate(MethodDefinition m, TypeReference returnType, List<TypeDefinition> list)
+        public static Mono.Cecil.TypeDefinition GetDelegate(Mono.Cecil.MethodDefinition m, TypeReference returnType, List<Mono.Cecil.TypeDefinition> list)
         {
             if (m.Name != ".cctor")
             {
@@ -135,7 +129,7 @@ namespace QuickJS.Unity.Experimental.Hotfix
             return null;
         }
 
-        public static string GetMethodString(MethodDefinition method)
+        public static string GetMethodString(Mono.Cecil.MethodDefinition method)
         {
             var sb = "";
             sb += $"{method.ReturnType} ";
@@ -155,7 +149,7 @@ namespace QuickJS.Unity.Experimental.Hotfix
             return sb;
         }
 
-        private static OpCode[] ldarg_i_table = new OpCode[] { OpCodes.Ldarg_0, OpCodes.Ldarg_1, OpCodes.Ldarg_2, OpCodes.Ldarg_3 };
+        private static Mono.Cecil.OpCode[] ldarg_i_table = new Mono.Cecil.OpCode[] { Mono.Cecil.OpCodes.Ldarg_0, Mono.Cecil.OpCodes.Ldarg_1, Mono.Cecil.OpCodes.Ldarg_2, Mono.Cecil.OpCodes.Ldarg_3 };
 
         private static Instruction FindPatchPoint(MethodBody body)
         {
@@ -163,7 +157,7 @@ namespace QuickJS.Unity.Experimental.Hotfix
             return instructions.Count > 0 ? instructions[0] : null;
         }
 
-        private static string GetHotfixFieldName_r(MethodDefinition method, HashSet<string> set)
+        private static string GetHotfixFieldName_r(Mono.Cecil.MethodDefinition method, HashSet<string> set)
         {
             var plainName = method.IsConstructor ? "_JSFIX_RC_" + method.Name.Replace(".", "") : "_JSFIX_R_" + method.Name;
             var index = 0;
@@ -178,7 +172,7 @@ namespace QuickJS.Unity.Experimental.Hotfix
             return serialName;
         }
 
-        private static string GetHotfixFieldName_b(MethodDefinition method, HashSet<string> set)
+        private static string GetHotfixFieldName_b(Mono.Cecil.MethodDefinition method, HashSet<string> set)
         {
             var plainName = method.IsConstructor ? "_JSFIX_BC_" + method.Name.Replace(".", "") : "_JSFIX_B_" + method.Name;
             var index = 0;
@@ -200,8 +194,8 @@ namespace QuickJS.Unity.Experimental.Hotfix
                 return;
             }
             var assemblyFilePath = testAssembly.Location;
-            var a = AssemblyDefinition.ReadAssembly(assemblyFilePath);
-            var delegateTypes = new List<TypeDefinition>();
+            var a = Mono.Cecil.AssemblyDefinition.ReadAssembly(assemblyFilePath);
+            var delegateTypes = new List<Mono.Cecil.TypeDefinition>();
             var modified = false;
 
             if (!Collect(a, delegateTypes))
@@ -251,19 +245,19 @@ namespace QuickJS.Unity.Experimental.Hotfix
                         var localPoint = point;
 
                         type.Fields.Add(delegateField_b);
-                        proc.InsertBefore(localPoint, point = proc.Create(OpCodes.Ldsfld, delegateField_b));
-                        proc.InsertBefore(localPoint, proc.Create(OpCodes.Ldnull));
-                        proc.InsertBefore(localPoint, proc.Create(OpCodes.Cgt_Un));
-                        proc.InsertBefore(localPoint, proc.Create(OpCodes.Stloc, boolVar));
-                        proc.InsertBefore(localPoint, proc.Create(OpCodes.Ldloc, boolVar));
-                        proc.InsertBefore(localPoint, proc.Create(OpCodes.Brfalse_S, localPoint)); // jump to original instructions
-                        proc.InsertBefore(localPoint, proc.Create(OpCodes.Ldsfld, delegateField_b));
+                        proc.InsertBefore(localPoint, point = proc.Create(Mono.Cecil.OpCodes.Ldsfld, delegateField_b));
+                        proc.InsertBefore(localPoint, proc.Create(Mono.Cecil.OpCodes.Ldnull));
+                        proc.InsertBefore(localPoint, proc.Create(Mono.Cecil.OpCodes.Cgt_Un));
+                        proc.InsertBefore(localPoint, proc.Create(Mono.Cecil.OpCodes.Stloc, boolVar));
+                        proc.InsertBefore(localPoint, proc.Create(Mono.Cecil.OpCodes.Ldloc, boolVar));
+                        proc.InsertBefore(localPoint, proc.Create(Mono.Cecil.OpCodes.Brfalse_S, localPoint)); // jump to original instructions
+                        proc.InsertBefore(localPoint, proc.Create(Mono.Cecil.OpCodes.Ldsfld, delegateField_b));
 
                         if (method.IsStatic)
                         {
                             var refGetTypeFromHandle = a.MainModule.ImportReference(typeof(Type).GetMethod("GetTypeFromHandle"));
-                            proc.InsertBefore(localPoint, proc.Create(OpCodes.Ldtoken, type));
-                            proc.InsertBefore(localPoint, proc.Create(OpCodes.Call, refGetTypeFromHandle));
+                            proc.InsertBefore(localPoint, proc.Create(Mono.Cecil.OpCodes.Ldtoken, type));
+                            proc.InsertBefore(localPoint, proc.Create(Mono.Cecil.OpCodes.Call, refGetTypeFromHandle));
                         }
 
                         for (var argIndex = 0; argIndex < argCount; argIndex++)
@@ -275,15 +269,15 @@ namespace QuickJS.Unity.Experimental.Hotfix
                             }
                             else if (ldarg_i <= byte.MaxValue)
                             {
-                                proc.InsertBefore(localPoint, proc.Create(OpCodes.Ldarg_S, (byte)ldarg_i));
+                                proc.InsertBefore(localPoint, proc.Create(Mono.Cecil.OpCodes.Ldarg_S, (byte)ldarg_i));
                             }
                             else
                             {
-                                proc.InsertBefore(localPoint, proc.Create(OpCodes.Ldarg, ldarg_i));
+                                proc.InsertBefore(localPoint, proc.Create(Mono.Cecil.OpCodes.Ldarg, ldarg_i));
                             }
                         }
                         var invoke_b = delegateType_b.Methods.First(dm => dm.Name == "Invoke");
-                        proc.InsertBefore(localPoint, proc.Create(OpCodes.Callvirt, invoke_b));
+                        proc.InsertBefore(localPoint, proc.Create(Mono.Cecil.OpCodes.Callvirt, invoke_b));
                     }
 
                     if (delegateType_r != null)
@@ -292,19 +286,19 @@ namespace QuickJS.Unity.Experimental.Hotfix
                         var localPoint = point;
 
                         type.Fields.Add(delegateField_r);
-                        proc.InsertBefore(localPoint, point = proc.Create(OpCodes.Ldsfld, delegateField_r));
-                        proc.InsertBefore(localPoint, proc.Create(OpCodes.Ldnull));
-                        proc.InsertBefore(localPoint, proc.Create(OpCodes.Cgt_Un));
-                        proc.InsertBefore(localPoint, proc.Create(OpCodes.Stloc, boolVar));
-                        proc.InsertBefore(localPoint, proc.Create(OpCodes.Ldloc, boolVar));
-                        proc.InsertBefore(localPoint, proc.Create(OpCodes.Brfalse_S, localPoint)); // jump to original instructions
-                        proc.InsertBefore(localPoint, proc.Create(OpCodes.Ldsfld, delegateField_r));
+                        proc.InsertBefore(localPoint, point = proc.Create(Mono.Cecil.OpCodes.Ldsfld, delegateField_r));
+                        proc.InsertBefore(localPoint, proc.Create(Mono.Cecil.OpCodes.Ldnull));
+                        proc.InsertBefore(localPoint, proc.Create(Mono.Cecil.OpCodes.Cgt_Un));
+                        proc.InsertBefore(localPoint, proc.Create(Mono.Cecil.OpCodes.Stloc, boolVar));
+                        proc.InsertBefore(localPoint, proc.Create(Mono.Cecil.OpCodes.Ldloc, boolVar));
+                        proc.InsertBefore(localPoint, proc.Create(Mono.Cecil.OpCodes.Brfalse_S, localPoint)); // jump to original instructions
+                        proc.InsertBefore(localPoint, proc.Create(Mono.Cecil.OpCodes.Ldsfld, delegateField_r));
 
                         if (method.IsStatic)
                         {
                             var refGetTypeFromHandle = a.MainModule.ImportReference(typeof(Type).GetMethod("GetTypeFromHandle"));
-                            proc.InsertBefore(localPoint, proc.Create(OpCodes.Ldtoken, type));
-                            proc.InsertBefore(localPoint, proc.Create(OpCodes.Call, refGetTypeFromHandle));
+                            proc.InsertBefore(localPoint, proc.Create(Mono.Cecil.OpCodes.Ldtoken, type));
+                            proc.InsertBefore(localPoint, proc.Create(Mono.Cecil.OpCodes.Call, refGetTypeFromHandle));
                         }
 
                         for (var argIndex = 0; argIndex < argCount; argIndex++)
@@ -316,16 +310,16 @@ namespace QuickJS.Unity.Experimental.Hotfix
                             }
                             else if (ldarg_i <= byte.MaxValue)
                             {
-                                proc.InsertBefore(localPoint, proc.Create(OpCodes.Ldarg_S, (byte)ldarg_i));
+                                proc.InsertBefore(localPoint, proc.Create(Mono.Cecil.OpCodes.Ldarg_S, (byte)ldarg_i));
                             }
                             else
                             {
-                                proc.InsertBefore(localPoint, proc.Create(OpCodes.Ldarg, ldarg_i));
+                                proc.InsertBefore(localPoint, proc.Create(Mono.Cecil.OpCodes.Ldarg, ldarg_i));
                             }
                         }
                         var invoke_r = delegateType_r.Methods.First(dm => dm.Name == "Invoke");
-                        proc.InsertBefore(localPoint, proc.Create(OpCodes.Callvirt, invoke_r));
-                        proc.InsertBefore(localPoint, proc.Create(OpCodes.Ret));
+                        proc.InsertBefore(localPoint, proc.Create(Mono.Cecil.OpCodes.Callvirt, invoke_r));
+                        proc.InsertBefore(localPoint, proc.Create(Mono.Cecil.OpCodes.Ret));
                     }
 
                     sb += hotfixFieldName_r + " > " + signatureLit;
@@ -336,7 +330,7 @@ namespace QuickJS.Unity.Experimental.Hotfix
 
             if (modified)
             {
-                a.MainModule.Types.Add(new TypeDefinition("QuickJS", TypeNameForInjectFlag, Mono.Cecil.TypeAttributes.Class, a.MainModule.TypeSystem.Object));
+                a.MainModule.Types.Add(new Mono.Cecil.TypeDefinition("QuickJS", TypeNameForInjectFlag, Mono.Cecil.TypeAttributes.Class, a.MainModule.TypeSystem.Object));
                 a.Write(assemblyFilePath);
                 // a.Write("temp.dll");
                 Debug.LogFormat("write: {0}", assemblyFilePath);
